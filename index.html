@@ -1,92 +1,85 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Rogue Echo 2.0 Deep Scanner</title>
+    <title>Rogue Echo 2.0 Force Sync</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body { background: #000; color: #fff; font-family: 'Courier New', monospace; padding: 10px; text-align: center; }
+        body { background: #000; color: #fff; font-family: monospace; padding: 10px; text-align: center; }
         .box { border: 2px solid #333; padding: 15px; border-radius: 15px; max-width: 500px; margin: auto; background: #111; }
         button { background: #d32f2f; color: #fff; border: none; padding: 18px; width: 100%; border-radius: 10px; font-weight: bold; margin-bottom: 10px; cursor: pointer; }
         #clock { font-size: 5em; color: #32d74b; margin: 10px 0; }
-        #status { color: #ffd60a; font-size: 14px; margin-bottom: 10px; }
-        #raw-log { background: #050505; font-size: 11px; height: 300px; overflow-y: scroll; text-align: left; padding: 10px; color: #00ff41; border: 1px solid #222; display: flex; flex-direction: column-reverse; margin-top: 5px; border-radius: 8px; }
+        #raw-log { background: #050505; font-size: 11px; height: 350px; overflow-y: scroll; text-align: left; padding: 10px; color: #00ff41; border: 1px solid #222; display: flex; flex-direction: column-reverse; border-radius: 8px; }
     </style>
 </head>
 <body>
     <div class="box">
-        <h2 style="color:#d32f2f; margin:0;">ROGUE DEEP SCAN</h2>
+        <h2 style="color:#d32f2f; margin:0;">ECHO 2.0 FORCE</h2>
         <button onclick="audio.play()">1. TEST SOUND</button>
-        <button id="connBtn">2. CONNECT & AUTO-DISCOVER</button>
+        <button id="connBtn">2. CONNECT & FORCE SYNC</button>
         <div id="clock">00:00</div>
-        <div id="status">Ready.</div>
-        <div id="raw-log">Log initialized...</div>
+        <div id="raw-log">Waiting for force command...</div>
     </div>
 
 <script>
     const audio = new Audio('boxing-beep2.mp3'); 
-    const rawLogEl = document.getElementById('raw-log');
-    const statusEl = document.getElementById('status');
+    const logEl = document.getElementById('raw-log');
 
-    function log(msg, isData = false) {
+    function log(m, isData = false) {
         const div = document.createElement('div');
-        div.textContent = isData ? `> ${msg}` : msg;
-        if (!isData) div.style.color = '#fff';
-        rawLogEl.appendChild(div);
-        if (rawLogEl.childNodes.length > 50) rawLogEl.removeChild(rawLogEl.firstChild);
+        div.textContent = isData ? `> ${m}` : m;
+        if(!isData) div.style.color = "#ffd60a";
+        logEl.appendChild(div);
+        if (logEl.childNodes.length > 50) logEl.removeChild(logEl.firstChild);
     }
 
     document.getElementById('connBtn').onclick = async () => {
         try {
-            statusEl.innerText = "Searching for Rogue...";
+            log("Requesting Echo 2.0...");
             const device = await navigator.bluetooth.requestDevice({
-                acceptAllDevices: true,
-                optionalServices: ['0000fff0-0000-1000-8000-00805f9b34fb', '0000180a-0000-1000-8000-00805f9b34fb']
+                filters: [{ namePrefix: 'Rogue' }, { namePrefix: 'Echo' }],
+                optionalServices: ['0000fff0-0000-1000-8000-00805f9b34fb']
             });
 
-            log(`Connected to: ${device.name}`);
             const server = await device.gatt.connect();
-            statusEl.innerText = "Discovering Services...";
+            const service = await server.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
             
-            const services = await server.getPrimaryServices();
+            // TARGETING FFF1 (The Listener)
+            const charNotify = await service.getCharacteristic('0000fff1-0000-1000-8000-00805f9b34fb');
             
-            for (const service of services) {
-                log(`Found Service: ${service.uuid}`);
-                const chars = await service.getCharacteristics();
-                
-                for (const char of chars) {
-                    log(` - Char: ${char.uuid} [${Object.keys(char.properties).filter(k => char.properties[k]).join(',')}]`);
-                    
-                    // If it can notify, subscribe to it!
-                    if (char.properties.notify) {
-                        await char.startNotifications();
-                        char.addEventListener('characteristicvaluechanged', (e) => {
-                            const bytes = new Uint8Array(e.target.value.buffer);
-                            const hex = Array.from(bytes).map(b => b.toString(16).toUpperCase().padStart(2, '0')).join(' ');
-                            log(hex, true);
-                            
-                            // Simple parser: looking for seconds in common spots
-                            if (bytes.length >= 3) {
-                                document.getElementById('clock').innerText = `${String(bytes[1]).padStart(2,'0')}:${String(bytes[2]).padStart(2,'0')}`;
-                                if (bytes[2] === 30) audio.play().catch(()=>{});
-                            }
-                        });
-                        log(`   [Subscribed to Notifications]`);
-                    }
+            // TARGETING FFF2 (The Talker)
+            const charWrite = await service.getCharacteristic('0000fff2-0000-1000-8000-00805f9b34fb');
 
-                    // Try to send the "Wake Up" command to any writable channel
-                    if (char.properties.write || char.properties.writeWithoutResponse) {
-                        try {
-                            await char.writeValueWithoutResponse(new Uint8Array([0x01, 0x01]));
-                            log(`   [Sent Wake-up to ${char.uuid}]`);
-                        } catch(e) {}
-                    }
+            // FORCE START NOTIFICATIONS
+            log("Forcing subscription...");
+            await charNotify.startNotifications();
+            
+            charNotify.addEventListener('characteristicvaluechanged', (e) => {
+                const bytes = new Uint8Array(e.target.value.buffer);
+                const hex = Array.from(bytes).map(b => b.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+                log(hex, true);
+
+                // Try to find any byte counting down
+                if (bytes.length >= 4) {
+                    let m = bytes[2];
+                    let s = bytes[3];
+                    document.getElementById('clock').innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+                    if (s === 30) audio.play().catch(()=>{});
                 }
-            }
-            statusEl.innerText = "Monitoring all channels...";
+            });
+
+            // The Echo 2.0 often needs a "Keep Alive" or "Status Request"
+            log("Sending Sync Pulse...");
+            setInterval(async () => {
+                try {
+                    // This is the specific 2.0 "Request Status" hex
+                    await charWrite.writeValueWithoutResponse(new Uint8Array([0x03, 0x01, 0x01, 0x01]));
+                } catch(e) {}
+            }, 1000);
+
+            log("SYNC ACTIVE. Run your rounds!");
 
         } catch (e) {
-            statusEl.innerText = "Error!";
-            log(`FATAL: ${e.message}`);
+            log("FATAL: " + e.message);
         }
     };
 </script>
