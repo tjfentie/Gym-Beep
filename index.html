@@ -547,8 +547,11 @@ async function connect() {
     log('Requesting BLE device…', 'info');
 
     const requestOptions = {
-      // Filter to ONLY the Rogue timer service so the picker is clean
-      filters: [{ services: [KNOWN_SERVICE] }],
+      // Filter by device name — Rogue timers advertise as "Echo" or similar.
+      // acceptAllDevices is the fallback so you can always pick it manually.
+      acceptAllDevices: true,
+      // fff0 is NOT advertised — it's only available post-connection.
+      // We must list it as optionalServices so Chrome allows us to access it after connecting.
       optionalServices: [KNOWN_SERVICE],
     };
 
