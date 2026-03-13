@@ -1,87 +1,116 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Rogue Echo Fix</title>
+    <title>Rogue Echo - Raw Pulse Monitor</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body { background: #000; color: #fff; font-family: monospace; padding: 10px; text-align: center; }
-        .box { border: 2px solid #444; padding: 15px; border-radius: 15px; max-width: 400px; margin: auto; background: #111; }
-        button { background: #d32f2f; color: #fff; border: none; padding: 15px; width: 100%; border-radius: 10px; font-weight: bold; margin-bottom: 10px; cursor: pointer; }
-        #clock { font-size: 5em; color: #32d74b; margin: 10px 0; }
-        #log { background: #000; font-size: 11px; height: 300px; overflow-y: scroll; text-align: left; padding: 10px; color: #0f0; border: 1px solid #333; display: flex; flex-direction: column-reverse; }
+        body { background: #000; color: #fff; font-family: 'Courier New', monospace; padding: 10px; text-align: center; }
+        .box { border: 2px solid #444; padding: 15px; border-radius: 15px; max-width: 500px; margin: auto; background: #111; box-shadow: 0 0 20px rgba(50, 215, 75, 0.1); }
+        button { background: #d32f2f; color: #fff; border: none; padding: 15px; width: 100%; border-radius: 10px; font-weight: bold; margin-bottom: 10px; cursor: pointer; font-size: 1.1em; }
+        #clock { font-size: 5em; color: #32d74b; margin: 10px 0; font-weight: bold; }
+        
+        /* Raw Monitor Styling */
+        .monitor-label { font-size: 0.8em; color: #888; text-align: left; margin-top: 15px; text-transform: uppercase; letter-spacing: 1px; }
+        #raw-log { 
+            background: #050505; 
+            font-size: 12px; 
+            height: 350px; 
+            overflow-y: scroll; 
+            text-align: left; 
+            padding: 10px; 
+            color: #00ff41; 
+            border: 1px solid #222; 
+            display: flex; 
+            flex-direction: column-reverse; 
+            margin-top: 5px;
+            border-radius: 8px;
+        }
+        .packet { border-bottom: 1px solid #1a1a1a; padding: 5px 0; display: flex; justify-content: space-between; }
+        .timestamp { color: #555; font-size: 10px; }
+        .hex-data { font-weight: bold; color: #00ff41; }
     </style>
 </head>
 <body>
     <div class="box">
-        <h2 style="color:#d32f2f">ECHO 2.0 CONNECT</h2>
-        <button onclick="audio.play()">1. TEST SOUND</button>
-        <button onclick="connect()">2. CONNECT TIMER</button>
-        <div id="clock">00:00</div>
-        <div id="log">Status: Ready</div>
+        <h2 style="color:#d32f2f; margin-top:0;">PULSE MONITOR V8</h2>
+        <button onclick="audio.play()">TEST SOUND</button>
+        <button onclick="connect()">CONNECT TO ROGUE</button>
+        
+        <div id="clock">--:--</div>
+        
+        <div class="monitor-label">Incoming Data Stream (Raw)</div>
+        <div id="raw-log">Waiting for Bluetooth heartbeat...</div>
     </div>
 
 <script>
     const audio = new Audio('boxing-beep2.mp3'); 
-    const logEl = document.getElementById('log');
+    const rawLogEl = document.getElementById('raw-log');
+    let lastSecond = -1;
 
-    function logger(m) {
+    function logPacket(hex) {
         const div = document.createElement('div');
-        div.textContent = `> ${m}`;
-        logEl.appendChild(div);
+        div.className = 'packet';
+        const now = new Date();
+        const timeStr = now.getHours().toString().padStart(2, '0') + ":" + 
+                        now.getMinutes().toString().padStart(2, '0') + ":" + 
+                        now.getSeconds().toString().padStart(2, '0') + "." + 
+                        now.getMilliseconds().toString().padStart(3, '0');
+        
+        div.innerHTML = `<span class="hex-data">${hex}</span> <span class="timestamp">${timeStr}</span>`;
+        rawLogEl.appendChild(div);
+        
+        // Keep only the last 40 packets
+        if (rawLogEl.childNodes.length > 40) rawLogEl.removeChild(rawLogEl.firstChild);
     }
 
     async function connect() {
         try {
-            logger("Requesting Device...");
+            rawLogEl.innerHTML = "<div>Searching...</div>";
             const device = await navigator.bluetooth.requestDevice({
                 filters: [{ namePrefix: 'Rogue' }, { namePrefix: 'Echo' }],
                 optionalServices: ['0000fff0-0000-1000-8000-00805f9b34fb']
             });
 
-            logger("Connecting to Server...");
             const server = await device.gatt.connect();
             const service = await server.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
-            
-            // Get the characteristic for LISTENING (Notify)
             const charNotify = await service.getCharacteristic('0000fff1-0000-1000-8000-00805f9b34fb');
             
-            // Try to send a wake-up pulse, but don't crash if it fails
-            try {
-                const charWrite = await service.getCharacteristic('0000fff2-0000-1000-8000-00805f9b34fb');
-                await charWrite.writeValue(new Uint8Array([0x03, 0x01]));
-                logger("Wake-up signal sent.");
-            } catch(e) {
-                logger("Write-channel skipped (Read-only mode).");
-            }
-
             await charNotify.startNotifications();
-            logger("Notifications Active. Run timer!");
+            rawLogEl.innerHTML = "<div>Connection established. Stream active.</div>";
 
             charNotify.addEventListener('characteristicvaluechanged', (e) => {
                 const data = e.target.value;
                 let bytes = [];
                 for (let i = 0; i < data.byteLength; i++) bytes.push(data.getUint8(i));
                 
-                // Show raw data for debugging
-                logger(bytes.map(b => b.toString(16).toUpperCase().padStart(2, '0')).join(' '));
+                // 1. Show the Raw Hex for debugging
+                const hex = bytes.map(b => b.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+                logPacket(hex);
 
-                // Rogue 2.0 Mapping: Usually [Head, Min, Sec, Round, Mode]
-                if (bytes.length >= 3) {
-                    let m = bytes[1];
-                    let s = bytes[2];
+                // 2. Attempt to parse common Rogue V2 patterns
+                if (bytes.length >= 4) {
+                    let m = bytes[2];
+                    let s = bytes[3];
                     
-                    document.getElementById('clock').innerText = 
-                        `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-
-                    if (s === 30) {
-                        audio.play().catch(() => {});
-                        logger("!!! 30S BEEP !!!");
+                    // If the numbers look valid for time (0-59), update the big clock
+                    if (s < 60 && m < 100) {
+                        document.getElementById('clock').innerText = 
+                            `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+                        
+                        // Beep trigger logic
+                        if (s === 30 && lastSecond !== 30) {
+                            audio.play().catch(() => {});
+                        }
+                        lastSecond = s;
                     }
                 }
             });
 
         } catch (e) {
-            logger("ERROR: " + e.message);
+            const div = document.createElement('div');
+            div.style.color = '#ff3b30';
+            div.textContent = `ERROR: ${e.message}`;
+            rawLogEl.appendChild(div);
         }
     }
 </script>
