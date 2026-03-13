@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rogue Timer 30s Beeper</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; color: white; text-align: center; padding: 20px; }
+        .container { max-width: 400px; margin: auto; border: 2px solid #333; padding: 30px; border-radius: 15px; background: #252525; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h1 { color: #d32f2f; margin-bottom: 5px; }
+        p { color: #aaa; font-size: 0.9em; margin-bottom: 30px; }
+        #status { font-weight: bold; margin: 20px 0; color: #ff9800; }
+        button { background-color: #d32f2f; color: white; border: none; padding: 15px 30px; font-size: 1.1em; border-radius: 50px; cursor: pointer; transition: 0.3s; width: 100%; }
+        button:hover { background-color: #b71c1c; transform: scale(1.02); }
+        button:disabled { background-color: #555; cursor: not-allowed; }
+        #timer-box { font-size: 3em; margin: 20px 0; font-family: monospace; color: #4caf50; }
+        .log { font-size: 0.7em; color: #666; text-align: left; height: 100px; overflow-y: scroll; background: #111; padding: 10px; border-radius: 5px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Gym Beeper</h1>
+    <p>30-Second Warning System</p>
+    
+    <div id="status">Ready to Scan</div>
+    <div id="timer-box">--:--</div>
+    
+    <button id="connectBtn">CONNECT TIMER</button>
+
+    <div class="log" id="log">System logs will appear here...</div>
+</div>
+
+<script>
+    const connectBtn = document.getElementById('connectBtn');
+    const statusDiv = document.getElementById('status');
+    const timerDiv = document.getElementById('timer-box');
+    const logDiv = document.getElementById('log');
+
+    // High-quality Boxing Bell Sound
+    const bellSound = new Audio('https://actions.google.com/sounds/v1/alarms/alarm_clock_short_beeps.ogg');
+
+    function log(msg) {
+        const entry = document.createElement('div');
+        entry.textContent = `> ${msg}`;
+        logDiv.prepend
