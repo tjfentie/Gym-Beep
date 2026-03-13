@@ -1,61 +1,63 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gym Beep 30s</title>
+    <title>30s Gym Beeper</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body { font-family: -apple-system, sans-serif; background: #121212; color: white; text-align: center; padding: 20px; }
-        .card { max-width: 400px; margin: 40px auto; background: #1e1e1e; padding: 30px; border-radius: 20px; border: 1px solid #333; }
-        #status { margin: 20px 0; font-weight: bold; color: #ffd60a; text-transform: uppercase; letter-spacing: 1px; }
-        #timer { font-size: 5em; margin: 20px 0; font-family: monospace; color: #32d74b; text-shadow: 0 0 10px rgba(50, 215, 75, 0.3); }
-        button { background: #ff3b30; color: white; border: none; padding: 20px; font-size: 1.2em; border-radius: 12px; cursor: pointer; width: 100%; font-weight: bold; }
-        button:active { background: #d12f26; }
-        .logs { font-size: 11px; color: #666; text-align: left; background: #000; padding: 10px; margin-top: 20px; height: 120px; overflow-y: auto; border-radius: 8px; border: 1px solid #222; }
+        body { background: #000; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
+        .box { border: 2px solid #333; padding: 20px; border-radius: 15px; max-width: 300px; margin: auto; }
+        button { background: #d32f2f; color: #fff; border: none; padding: 15px; width: 100%; border-radius: 10px; font-weight: bold; margin-bottom: 10px; cursor: pointer; }
+        #status { color: #ffd60a; margin: 15px 0; font-size: 0.9em; }
+        #log { background: #111; font-size: 10px; height: 80px; overflow-y: scroll; text-align: left; padding: 10px; color: #666; }
     </style>
 </head>
 <body>
-
-<div class="card">
-    <h1 style="margin:0; color:#ff3b30;">GYM BEEP</h1>
-    <p style="color:#666; margin-bottom:30px;">30s Warning System</p>
-    
-    <div id="status">Tap button to scan</div>
-    <div id="timer">--:--</div>
-    
-    <button id="connectBtn">CONNECT TIMER</button>
-
-    <div class="logs" id="logs">Ready. Ensure Bluetooth & Location are ON.</div>
-</div>
-
-<script>
-    const connectBtn = document.getElementById('connectBtn');
-    const statusDiv = document.getElementById('status');
-    const timerDiv = document.getElementById('timer');
-    const logsDiv = document.getElementById('logs');
-    
-    // High-pitched boxing beep
-    const bell = new Audio('https://actions.google.com/sounds/v1/alarms/alarm_clock_short_beeps.ogg');
-
-    function log(msg) {
-        const p = document.createElement('div');
-        p.textContent = `> ${new Date().toLocaleTimeString([], {hour12:false, minute:'2-digit', second:'2-digit'})}: ${msg}`;
-        logsDiv.prepend(p);
-    }
-
-    // This MUST be a direct function called by the click
-    async function startBluetooth() {
-        log("Searching... Look for 'Echo' or 'Rogue' in the list.");
+    <div class="box">
+        <h2>Gym Beeper</h2>
+        <div id="status">Location & BT must be ON</div>
         
-        try {
-            // STEP 1: Request Device (Wide Open)
-            const device = await navigator.bluetooth.requestDevice({
-                acceptAllDevices: true,
-                optionalServices: ['0000fff0-0000-1000-8000-00805f9b34fb']
-            });
+        <button onclick="testSound()" style="background:#444">TEST SOUND FIRST</button>
+        <button id="conn">CONNECT TIMER</button>
+        
+        <h1 id="clock">--:--</h1>
+        <div id="log">Logs: Ready...</div>
+    </div>
 
-            log(`Found: ${device.name || 'Unknown'}`);
-            statusDiv.innerText = "Connecting...";
-            
-            // STEP 2: Connect to GATT
-            const server = await device.gatt.connect
+    <script>
+        const audio = new Audio('https://actions.google.com/sounds/v1/alarms/alarm_clock_short_beeps.ogg');
+        const logger = (m) => { document.getElementById('log').innerHTML += '<br>> ' + m; };
+        
+        function testSound() {
+            audio.play();
+            logger("Sound test played.");
+        }
+
+        document.getElementById('conn').onclick = async () => {
+            logger("Button clicked. Requesting device...");
+            try {
+                const device = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: ['0000fff0-0000-1000-8000-00805f9b34fb']
+                });
+
+                logger("Device picked: " + device.name);
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
+                const char = await service.getCharacteristic('0000fff1-0000-1000-8000-00805f9b34fb');
+
+                await char.startNotifications();
+                char.addEventListener('characteristicvaluechanged', (e) => {
+                    const s = e.target.value.getUint8(2);
+                    document.getElementById('clock').innerText = "00:" + s.toString().padStart(2, '0');
+                    if (s === 30) { audio.play(); logger("BEEP!"); }
+                });
+
+                document.getElementById('status').innerText = "CONNECTED";
+            } catch (e) {
+                logger("ERROR: " + e.message);
+                console.error(e);
+            }
+        };
+    </script>
+</body>
+</html>
