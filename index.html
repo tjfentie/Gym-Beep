@@ -5,26 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { background: #000; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
-        .box { border: 2px solid #333; padding: 20px; border-radius: 15px; max-width: 300px; margin: auto; }
-        button { background: #d32f2f; color: #fff; border: none; padding: 15px; width: 100%; border-radius: 10px; font-weight: bold; margin-bottom: 10px; cursor: pointer; }
-        #status { color: #32d74b; margin: 15px 0; font-size: 0.9em; font-weight: bold; }
-        #clock { font-size: 5em; margin: 20px 0; font-family: monospace; color: #32d74b; }
-        #log { background: #111; font-size: 10px; height: 100px; overflow-y: scroll; text-align: left; padding: 10px; color: #666; border-radius: 5px; }
+        .box { border: 2px solid #333; padding: 20px; border-radius: 15px; max-width: 350px; margin: auto; background: #111; }
+        button { background: #d32f2f; color: #fff; border: none; padding: 18px; width: 100%; border-radius: 10px; font-weight: bold; margin-bottom: 12px; cursor: pointer; font-size: 1.1em; }
+        #status { color: #ffd60a; margin: 15px 0; font-weight: bold; font-size: 0.8em; letter-spacing: 1px; }
+        #clock { font-size: 5.5em; margin: 15px 0; font-family: 'Courier New', monospace; color: #32d74b; text-shadow: 0 0 15px rgba(50, 215, 75, 0.4); }
+        #log { background: #000; font-size: 10px; height: 120px; overflow-y: scroll; text-align: left; padding: 12px; color: #555; border: 1px solid #222; border-radius: 5px; line-height: 1.4; }
     </style>
 </head>
 <body>
     <div class="box">
-        <h2 style="color:#d32f2f">ROGUE 30s BEEP</h2>
-        <div id="status">TAP TEST, THEN CONNECT</div>
+        <h2 style="margin-top:0; color:#d32f2f;">ROGUE 30s BEEP</h2>
+        <div id="status">STATUS: STANDBY</div>
         
-        <button onclick="testSound()" style="background:#444">1. TEST SOUND</button>
-        <button id="conn">2. CONNECT TIMER</button>
+        <button id="soundBtn" style="background:#444">🔊 UNMUTE AUDIO FIRST</button>
+        <button id="connBtn">🔗 CONNECT TIMER</button>
         
         <div id="clock">--:--</div>
-        <div id="log">System Ready...</div>
+        <div id="log">Logs initialized...</div>
     </div>
 
     <script>
+        // High-pitch alert sound
         const audio = new Audio('https://actions.google.com/sounds/v1/alarms/alarm_clock_short_beeps.ogg');
         const logger = (m) => { 
             const l = document.getElementById('log');
@@ -32,57 +33,37 @@
             l.scrollTop = l.scrollHeight;
         };
         
-        function testSound() {
-            audio.play();
-            logger("Sound tested.");
-        }
+        // Fix for Android Audio restrictions
+        document.getElementById('soundBtn').onclick = () => {
+            audio.play().then(() => {
+                audio.pause();
+                audio.currentTime = 0;
+                document.getElementById('soundBtn').innerText = "✅ AUDIO READY";
+                document.getElementById('soundBtn').style.background = "#222";
+                logger("Audio context unlocked.");
+            }).catch(e => logger("Audio error: " + e));
+        };
 
         let hasBeeped = false;
 
-        document.getElementById('conn').onclick = async () => {
-            logger("Requesting Rogue Timer...");
+        document.getElementById('connBtn').onclick = async () => {
+            logger("Scanning for Rogue...");
             try {
                 const device = await navigator.bluetooth.requestDevice({
                     acceptAllDevices: true,
                     optionalServices: ['0000fff0-0000-1000-8000-00805f9b34fb']
                 });
 
-                logger("Connecting to: " + device.name);
+                logger("Connected to: " + device.name);
                 const server = await device.gatt.connect();
                 const service = await server.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
                 const char = await service.getCharacteristic('0000fff1-0000-1000-8000-00805f9b34fb');
 
                 await char.startNotifications();
-                logger("Notifications Active.");
-                document.getElementById('status').innerText = "CONNECTED & LISTENING";
+                logger("Listening for data pulses...");
+                document.getElementById('status').innerText = "STATUS: ACTIVE";
 
                 char.addEventListener('characteristicvaluechanged', (e) => {
                     const data = e.target.value;
                     
-                    // Rogue V2 Protocol Check:
-                    // Most fitness timers put seconds at index 2 or 3
-                    // We will check index 2 first
-                    let s = data.getUint8(2); 
-                    let m = data.getUint8(1);
-
-                    // Update Display
-                    document.getElementById('clock').innerText = 
-                        m.toString().padStart(2, '0') + ":" + s.toString().padStart(2, '0');
-
-                    // BEEP LOGIC
-                    if (s > 30) hasBeeped = false; // Reset for the next round
-
-                    if (s === 30 && !hasBeeped) {
-                        audio.play();
-                        logger("!!! 30 SECONDS !!!");
-                        hasBeeped = true;
-                    }
-                });
-
-            } catch (e) {
-                logger("ERROR: " + e.message);
-            }
-        };
-    </script>
-</body>
-</html>
+                    // The
