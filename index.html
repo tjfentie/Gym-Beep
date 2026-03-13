@@ -581,24 +581,40 @@ async function connect() {
 // SEND WAKE-UP / WRITE COMMAND TO fff2
 // ─────────────────────────────────────────────────────────────────────────────
 async function sendCommand(bytes, label) {
-  if (!writeChar) { log('No write characteristic available', 'err'); return; }
+  if (!writeChar) { log('No write characteristic available', 'err'); return false; }
+  const data = new Uint8Array(bytes);
+  // Try writeWithoutResponse first (faster, no ACK required), fall back to writeValue
   try {
-    await writeChar.writeValue(new Uint8Array(bytes));
+    if (writeChar.properties && writeChar.properties.writeWithoutResponse) {
+      await writeChar.writeValueWithoutResponse(data);
+    } else {
+      await writeChar.writeValue(data);
+    }
     log(`→ Sent [${label}]: [${bytes.map(b=>b.toString(16).padStart(2,'0')).join(' ')}]`, 'info');
+    return true;
   } catch(e) {
-    log(`→ Write failed [${label}]: ${e.message}`, 'err');
+    // If writeValue failed, try writeValueWithoutResponse as fallback
+    try {
+      await writeChar.writeValueWithoutResponse(data);
+      log(`→ Sent (noResp) [${label}]: [${bytes.map(b=>b.toString(16).padStart(2,'0')).join(' ')}]`, 'info');
+      return true;
+    } catch(e2) {
+      log(`→ Write failed [${label}]: ${e2.message}`, 'err');
+      return false;
+    }
   }
 }
 
 async function tryAllWakeupCommands() {
   log('─── TRYING ALL WAKE-UP COMMANDS ───', 'warn');
-  log('Watch for non-empty NOTIFY packets below…', 'warn');
+  log('Commands are sent one at a time, 800ms apart. Watch for NOTIFY packets…', 'warn');
   for (const cmd of WAKEUP_COMMANDS) {
+    if (!writeChar) { log('Lost write char — aborting sweep', 'err'); break; }
     await sendCommand(cmd.bytes, cmd.label);
-    await new Promise(r => setTimeout(r, 600)); // wait 600ms between each
+    await new Promise(r => setTimeout(r, 800)); // wait for response before next
   }
   log('─── WAKE-UP SWEEP DONE ───', 'warn');
-  log('If any NOTIFY packets appeared above, note which command triggered them.', 'warn');
+  log('If NOTIFY packets appeared above, note WHICH command triggered them.', 'warn');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -650,13 +666,10 @@ async function subscribeToNotifications() {
     if (activeNotifyChars.length > 0) {
       setStatus('Connected – listening', 'connected');
       log('─────────────────────────────────────────────', 'info');
-      log('Subscribed! Waiting for data from timer…', 'ok');
-      log('If nothing appears, click "Send Wake-up" to poke the timer.', 'warn');
-      log('The timer may need a command sent to fff2 before it streams data.', 'warn');
+      log('Subscribed! Now START your timer on the Rogue box.', 'ok');
+      log('If nothing appears within 5 seconds, click ⚡ Send Wake-up.', 'warn');
       log('─────────────────────────────────────────────', 'info');
-
-      // Auto-send first wake-up attempt
-      await sendCommand([0x01], 'auto-wakeup-0x01');
+      // Do NOT auto-send here — wait for GATT to fully settle first
     }
   } catch (err) {
     log(`Subscription failed: ${err.message}`, 'err');
@@ -683,8 +696,8 @@ async function discoverServices() {
       try {
         const chars = await svc.getCharacteristics();
         for (const ch of chars) {
-          const props = Object.entries(ch.properties)
-            .filter(([,v]) => v).map(([k]) => k).join(', ');
+        const PROP_NAMES = ['broadcast','read','writeWithoutResponse','write','notify','indicate','authenticatedSignedWrites','reliableWrite','writableAuxiliaries'];
+          const props = PROP_NAMES.filter(p => ch.properties[p]).join(', ') || 'none';
           log(`    CHAR: ${ch.uuid}  [${props}]`, 'uuid');
 
           // If it supports notify, subscribe temporarily and log raw bytes
