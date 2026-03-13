@@ -1,52 +1,93 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Gym Beep 30s</title>
+    <title>Rogue Debugger</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
-        .box { border: 2px solid #333; padding: 20px; border-radius: 15px; max-width: 350px; margin: auto; background: #111; }
-        button { background: #d32f2f; color: #fff; border: none; padding: 18px; width: 100%; border-radius: 10px; font-weight: bold; margin-bottom: 12px; cursor: pointer; font-size: 1.1em; }
-        #status { color: #ffd60a; margin: 15px 0; font-weight: bold; font-size: 0.8em; }
-        #clock { font-size: 5.5em; margin: 15px 0; font-family: monospace; color: #32d74b; }
-        #log { background: #000; font-size: 10px; height: 120px; overflow-y: scroll; text-align: left; padding: 12px; color: #555; border: 1px solid #222; }
+        body { background: #000; color: #fff; font-family: monospace; padding: 20px; text-align: center; }
+        .box { border: 2px solid #444; padding: 20px; border-radius: 15px; max-width: 400px; margin: auto; background: #111; }
+        button { background: #d32f2f; color: #fff; border: none; padding: 15px; width: 100%; border-radius: 10px; font-weight: bold; margin-bottom: 10px; cursor: pointer; }
+        #clock { font-size: 4em; color: #32d74b; margin: 10px 0; }
+        #log { background: #000; font-size: 11px; height: 250px; overflow-y: scroll; text-align: left; padding: 10px; color: #0f0; border: 1px solid #333; }
+        .hex-line { color: #aaa; border-bottom: 1px solid #222; padding: 2px 0; }
     </style>
 </head>
 <body>
     <div class="box">
-        <h2 style="color:#d32f2f; margin:0;">ROGUE BEEP</h2>
-        <div id="status">UNMUTE, THEN CONNECT</div>
-        
-        <button id="soundBtn" style="background:#444">1. TEST SOUND (LOUD!)</button>
-        <button id="connBtn">2. CONNECT TIMER</button>
+        <h3>ROGUE SCANNER V1</h3>
+        <button onclick="unlockAudio()">1. UNLOCK AUDIO</button>
+        <button onclick="connect()">2. PAIR TIMER</button>
         
         <div id="clock">--:--</div>
-        <div id="log">Waiting for user...</div>
+        <div id="log">Console ready. Tap Unlock Audio first.</div>
     </div>
 
     <script>
-        // High-pitch alert
         const audio = new Audio('https://actions.google.com/sounds/v1/alarms/alarm_clock_short_beeps.ogg');
-        const logger = (m) => { 
-            const l = document.getElementById('log');
-            l.innerHTML += '<br>> ' + m;
-            l.scrollTop = l.scrollHeight;
-        };
+        const logEl = document.getElementById('log');
 
-        // This "primes" the audio for the Pixel 8
-        document.getElementById('soundBtn').onclick = () => {
+        function logger(m, isData = false) {
+            const div = document.createElement('div');
+            div.className = isData ? 'hex-line' : '';
+            div.textContent = `> ${m}`;
+            logEl.prepend(div);
+        }
+
+        function unlockAudio() {
             audio.play().then(() => {
-                logger("Audio Unlocked.");
-                document.getElementById('soundBtn').style.background = "#222";
-                document.getElementById('soundBtn').innerText = "AUDIO READY";
-            }).catch(e => logger("Audio Blocked: Tap again."));
-        };
+                audio.pause();
+                audio.currentTime = 0;
+                logger("AUDIO ENGINE ENABLED");
+            }).catch(e => logger("AUDIO ERROR: " + e.message));
+        }
 
-        let lastS = -1;
-
-        document.getElementById('connBtn').onclick = async () => {
+        async function connect() {
+            logger("Requesting device...");
             try {
-                logger("Requesting Rogue Device...");
                 const device = await navigator.bluetooth.requestDevice({
                     acceptAllDevices: true,
-                    optionalServices: ['0000fff0-0000-1000-8000-00805
+                    optionalServices: ['0000fff0-0000-1000-8000-00805f9b34fb']
+                });
+
+                logger("Connecting to GATT...");
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
+                const char = await service.getCharacteristic('0000fff1-0000-1000-8000-00805f9b34fb');
+
+                await char.startNotifications();
+                logger("LISTENING FOR PULSES...");
+
+                char.addEventListener('characteristicvaluechanged', (e) => {
+                    const buf = e.target.value;
+                    let hex = "";
+                    let bytes = [];
+                    
+                    for (let i = 0; i < buf.byteLength; i++) {
+                        let b = buf.getUint8(i);
+                        bytes.push(b);
+                        hex += b.toString(16).padStart(2, '0').toUpperCase() + " ";
+                    }
+
+                    // Display the raw hex so we can see the pattern
+                    logger(hex, true);
+
+                    // Attempt to find seconds (usually index 2)
+                    if (bytes.length >= 3) {
+                        let m = bytes[1];
+                        let s = bytes[2];
+                        document.getElementById('clock').innerText = 
+                            `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+                        
+                        if (s === 30) {
+                            audio.play();
+                            logger("!!! BEEP TRIGGERED !!!");
+                        }
+                    }
+                });
+            } catch (e) {
+                logger("CRITICAL FAIL: " + e.message);
+            }
+        }
+    </script>
+</body>
+</html>
