@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Gym Beep - Rogue Debug</title>
+    <title>Rogue Pulse Hunter</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { background: #000; color: #fff; font-family: monospace; padding: 10px; text-align: center; }
@@ -10,17 +10,16 @@
         #clock { font-size: 5em; color: #32d74b; margin: 10px 0; }
         #log { background: #000; font-size: 11px; height: 350px; overflow-y: scroll; text-align: left; padding: 10px; color: #0f0; border: 1px solid #333; display: flex; flex-direction: column-reverse; }
         .hex-line { color: #00ff00; border-bottom: 1px solid #222; padding: 4px 0; font-size: 12px; }
-        .sys-msg { color: #ffd60a; margin: 5px 0; }
     </style>
 </head>
 <body>
     <div class="box">
-        <h2 style="color:#d32f2f">ROGUE DEBUGGER</h2>
+        <h2 style="color:#d32f2f">PULSE HUNTER V7</h2>
         <button onclick="audio.play()">1. TEST SOUND</button>
         <button onclick="connect()">2. CONNECT TIMER</button>
         
-        <div id="clock">--:--</div>
-        <div id="log">Logs waiting...</div>
+        <div id="clock">00:00</div>
+        <div id="log">Waiting for connection...</div>
     </div>
 
     <script>
@@ -29,14 +28,14 @@
 
         function logger(m, isData = false) {
             const div = document.createElement('div');
-            div.className = isData ? 'hex-line' : 'sys-msg';
+            div.className = isData ? 'hex-line' : '';
             div.textContent = `> ${m}`;
             logEl.appendChild(div);
         }
 
         async function connect() {
             try {
-                logger("Opening picker...");
+                logger("Requesting Rogue Timer...");
                 const device = await navigator.bluetooth.requestDevice({
                     acceptAllDevices: true,
                     optionalServices: ['0000fff0-0000-1000-8000-00805f9b34fb']
@@ -46,8 +45,13 @@
                 const service = await server.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
                 const char = await service.getCharacteristic('0000fff1-0000-1000-8000-00805f9b34fb');
 
+                // MANDATORY: Send a "Wake Up" command (This is the Rogue App secret handshake)
+                const wakeUp = new Uint8Array([0x03, 0x01, 0x01, 0x00]);
+                await char.writeValue(wakeUp);
+                logger("WAKE-UP COMMAND SENT");
+
                 await char.startNotifications();
-                logger("CONNECTED. Data pulses starting...");
+                logger("SCANNING FOR DATA...");
 
                 char.addEventListener('characteristicvaluechanged', (e) => {
                     const buf = e.target.value;
@@ -57,29 +61,28 @@
                     for (let i = 0; i < buf.byteLength; i++) {
                         let b = buf.getUint8(i);
                         bytes.push(b);
-                        // Convert to hex for the log
                         hex += b.toString(16).padStart(2, '0').toUpperCase() + " ";
                     }
 
-                    // Print the raw data so we can see what's happening
                     logger(hex, true);
 
-                    // SEARCH LOGIC: Rogue V2 often uses Byte 4 and 5 for time
-                    // We'll try a few common positions
-                    let m = bytes[1]; 
-                    let s = bytes[2];
-                    
-                    // If the above is 0, let's look further in the packet
-                    if (s === 0 && bytes.length > 4) {
-                        m = bytes[3];
-                        s = bytes[4];
-                    }
+                    // SMARTER SEARCH:
+                    // We hunt for any byte that is changing every second.
+                    // Usually, the Rogue 2.0 sends: [03, Round, Min, Sec, Mode]
+                    if (bytes.length >= 4) {
+                        let round = bytes[1];
+                        let min = bytes[2];
+                        let sec = bytes[3];
+                        
+                        // Update display
+                        document.getElementById('clock').innerText = 
+                            `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
 
-                    document.getElementById('clock').innerText = 
-                        `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-
-                    if (s === 30) {
-                        audio.play().catch(() => {});
+                        // BEEP LOGIC
+                        if (sec === 30) {
+                            audio.play().catch(() => {});
+                            logger("!!! 30S BEEP !!!");
+                        }
                     }
                 });
             } catch (e) {
