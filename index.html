@@ -1,94 +1,89 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Rogue Pulse Hunter</title>
+    <title>Rogue Echo Fix</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { background: #000; color: #fff; font-family: monospace; padding: 10px; text-align: center; }
         .box { border: 2px solid #444; padding: 15px; border-radius: 15px; max-width: 400px; margin: auto; background: #111; }
         button { background: #d32f2f; color: #fff; border: none; padding: 15px; width: 100%; border-radius: 10px; font-weight: bold; margin-bottom: 10px; cursor: pointer; }
         #clock { font-size: 5em; color: #32d74b; margin: 10px 0; }
-        #log { background: #000; font-size: 11px; height: 350px; overflow-y: scroll; text-align: left; padding: 10px; color: #0f0; border: 1px solid #333; display: flex; flex-direction: column-reverse; }
-        .hex-line { color: #00ff00; border-bottom: 1px solid #222; padding: 4px 0; font-size: 12px; }
+        #log { background: #000; font-size: 11px; height: 300px; overflow-y: scroll; text-align: left; padding: 10px; color: #0f0; border: 1px solid #333; display: flex; flex-direction: column-reverse; }
     </style>
 </head>
 <body>
     <div class="box">
-        <h2 style="color:#d32f2f">PULSE HUNTER V7</h2>
+        <h2 style="color:#d32f2f">ECHO 2.0 CONNECT</h2>
         <button onclick="audio.play()">1. TEST SOUND</button>
         <button onclick="connect()">2. CONNECT TIMER</button>
-        
         <div id="clock">00:00</div>
-        <div id="log">Waiting for connection...</div>
+        <div id="log">Status: Ready</div>
     </div>
 
-    <script>
-        const audio = new Audio('boxing-beep2.mp3'); 
-        const logEl = document.getElementById('log');
+<script>
+    const audio = new Audio('boxing-beep2.mp3'); 
+    const logEl = document.getElementById('log');
 
-        function logger(m, isData = false) {
-            const div = document.createElement('div');
-            div.className = isData ? 'hex-line' : '';
-            div.textContent = `> ${m}`;
-            logEl.appendChild(div);
-        }
+    function logger(m) {
+        const div = document.createElement('div');
+        div.textContent = `> ${m}`;
+        logEl.appendChild(div);
+    }
 
-        async function connect() {
+    async function connect() {
+        try {
+            logger("Requesting Device...");
+            const device = await navigator.bluetooth.requestDevice({
+                filters: [{ namePrefix: 'Rogue' }, { namePrefix: 'Echo' }],
+                optionalServices: ['0000fff0-0000-1000-8000-00805f9b34fb']
+            });
+
+            logger("Connecting to Server...");
+            const server = await device.gatt.connect();
+            const service = await server.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
+            
+            // Get the characteristic for LISTENING (Notify)
+            const charNotify = await service.getCharacteristic('0000fff1-0000-1000-8000-00805f9b34fb');
+            
+            // Try to send a wake-up pulse, but don't crash if it fails
             try {
-                logger("Requesting Rogue Timer...");
-                const device = await navigator.bluetooth.requestDevice({
-                    acceptAllDevices: true,
-                    optionalServices: ['0000fff0-0000-1000-8000-00805f9b34fb']
-                });
-
-                const server = await device.gatt.connect();
-                const service = await server.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
-                const char = await service.getCharacteristic('0000fff1-0000-1000-8000-00805f9b34fb');
-
-                // MANDATORY: Send a "Wake Up" command (This is the Rogue App secret handshake)
-                const wakeUp = new Uint8Array([0x03, 0x01, 0x01, 0x00]);
-                await char.writeValue(wakeUp);
-                logger("WAKE-UP COMMAND SENT");
-
-                await char.startNotifications();
-                logger("SCANNING FOR DATA...");
-
-                char.addEventListener('characteristicvaluechanged', (e) => {
-                    const buf = e.target.value;
-                    let bytes = [];
-                    let hex = "";
-                    
-                    for (let i = 0; i < buf.byteLength; i++) {
-                        let b = buf.getUint8(i);
-                        bytes.push(b);
-                        hex += b.toString(16).padStart(2, '0').toUpperCase() + " ";
-                    }
-
-                    logger(hex, true);
-
-                    // SMARTER SEARCH:
-                    // We hunt for any byte that is changing every second.
-                    // Usually, the Rogue 2.0 sends: [03, Round, Min, Sec, Mode]
-                    if (bytes.length >= 4) {
-                        let round = bytes[1];
-                        let min = bytes[2];
-                        let sec = bytes[3];
-                        
-                        // Update display
-                        document.getElementById('clock').innerText = 
-                            `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
-
-                        // BEEP LOGIC
-                        if (sec === 30) {
-                            audio.play().catch(() => {});
-                            logger("!!! 30S BEEP !!!");
-                        }
-                    }
-                });
-            } catch (e) {
-                logger("FAIL: " + e.message);
+                const charWrite = await service.getCharacteristic('0000fff2-0000-1000-8000-00805f9b34fb');
+                await charWrite.writeValue(new Uint8Array([0x03, 0x01]));
+                logger("Wake-up signal sent.");
+            } catch(e) {
+                logger("Write-channel skipped (Read-only mode).");
             }
+
+            await charNotify.startNotifications();
+            logger("Notifications Active. Run timer!");
+
+            charNotify.addEventListener('characteristicvaluechanged', (e) => {
+                const data = e.target.value;
+                let bytes = [];
+                for (let i = 0; i < data.byteLength; i++) bytes.push(data.getUint8(i));
+                
+                // Show raw data for debugging
+                logger(bytes.map(b => b.toString(16).toUpperCase().padStart(2, '0')).join(' '));
+
+                // Rogue 2.0 Mapping: Usually [Head, Min, Sec, Round, Mode]
+                if (bytes.length >= 3) {
+                    let m = bytes[1];
+                    let s = bytes[2];
+                    
+                    document.getElementById('clock').innerText = 
+                        `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+                    if (s === 30) {
+                        audio.play().catch(() => {});
+                        logger("!!! 30S BEEP !!!");
+                    }
+                }
+            });
+
+        } catch (e) {
+            logger("ERROR: " + e.message);
         }
-    </script>
+    }
+</script>
 </body>
 </html>
