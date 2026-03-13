@@ -15,214 +15,29 @@
       --mid:    #2b2b2b;
       --bright: #f1f1ef;
       --muted:  #888;
-      --mono:   'Share Tech Mono', monospace;
+      --mono:    'Share Tech Mono', monospace;
       --display:'Bebas Neue', sans-serif;
     }
-
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      background: #0d0d0d;
-      color: var(--bright);
-      font-family: var(--mono);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 2rem 1rem 4rem;
-      gap: 1.5rem;
-    }
-
-    h1 {
-      font-family: var(--display);
-      font-size: clamp(2rem, 7vw, 3.5rem);
-      letter-spacing: 0.12em;
-      color: var(--bright);
-      text-align: center;
-    }
+    body { background: #0d0d0d; color: var(--bright); font-family: var(--mono); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 2rem 1rem 4rem; gap: 1.5rem; }
+    h1 { font-family: var(--display); font-size: clamp(2rem, 7vw, 3.5rem); letter-spacing: 0.12em; text-align: center; }
     h1 span { color: var(--red); }
-
-    /* ── status pill ── */
-    #status-pill {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      background: var(--mid);
-      border: 1px solid #333;
-      border-radius: 999px;
-      padding: 0.45rem 1.1rem;
-      font-size: 0.78rem;
-      letter-spacing: 0.08em;
-      color: var(--muted);
-      transition: color 0.3s;
-    }
-    #status-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--muted);
-      transition: background 0.3s;
-      flex-shrink: 0;
-    }
+    #status-pill { display: flex; align-items: center; gap: 0.6rem; background: var(--mid); border: 1px solid #333; border-radius: 999px; padding: 0.45rem 1.1rem; font-size: 0.78rem; color: var(--muted); }
+    #status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
     #status-pill.connected  { color: var(--green); }
     #status-pill.connected  #status-dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
-    #status-pill.active     { color: var(--red);   }
-    #status-pill.active     #status-dot { background: var(--red);   box-shadow: 0 0 6px var(--red);   }
-    #status-pill.warning    { color: var(--yellow); }
-    #status-pill.warning    #status-dot { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
-
-    /* ── main card ── */
-    .card {
-      background: var(--dim);
-      border: 1px solid #2a2a2a;
-      border-radius: 12px;
-      padding: 1.6rem 2rem;
-      width: 100%;
-      max-width: 540px;
-    }
-    .card h2 {
-      font-size: 0.65rem;
-      letter-spacing: 0.18em;
-      color: var(--muted);
-      text-transform: uppercase;
-      margin-bottom: 1rem;
-    }
-
-    /* ── big timer display ── */
-    #timer-display {
-      font-family: var(--display);
-      font-size: clamp(4rem, 18vw, 8rem);
-      letter-spacing: 0.04em;
-      text-align: center;
-      color: var(--bright);
-      transition: color 0.3s;
-      line-height: 1;
-      padding: 0.5rem 0;
-    }
-    #timer-display.work  { color: var(--red);   }
+    .card { background: var(--dim); border: 1px solid #2a2a2a; border-radius: 12px; padding: 1.6rem 2rem; width: 100%; max-width: 540px; }
+    #timer-display { font-family: var(--display); font-size: clamp(4rem, 18vw, 8rem); text-align: center; line-height: 1; padding: 0.5rem 0; }
+    #timer-display.work  { color: var(--red); }
     #timer-display.rest  { color: var(--green); }
-    #timer-display.warn  { color: var(--yellow); animation: pulse 0.5s ease-in-out infinite alternate; }
-    @keyframes pulse { to { opacity: 0.5; } }
-
-    #round-display {
-      text-align: center;
-      color: var(--muted);
-      font-size: 0.9rem;
-      margin-top: 0.25rem;
-      min-height: 1.2em;
-    }
-
-    /* ── state label ── */
-    #state-label {
-      text-align: center;
-      margin-top: 0.8rem;
-      font-size: 0.7rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--muted);
-      min-height: 1em;
-    }
-
-    /* ── buttons ── */
-    .btn-row {
-      display: flex;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    button {
-      font-family: var(--mono);
-      font-size: 0.82rem;
-      letter-spacing: 0.1em;
-      border: 1px solid #444;
-      border-radius: 8px;
-      padding: 0.7rem 1.4rem;
-      cursor: pointer;
-      transition: background 0.2s, border-color 0.2s, color 0.2s;
-      background: transparent;
-      color: var(--bright);
-    }
-    button:hover { background: #2a2a2a; border-color: #666; }
-    button:disabled { opacity: 0.35; cursor: not-allowed; }
-    button.primary { background: var(--red); border-color: var(--red); color: #fff; }
-    button.primary:hover { background: #c1303b; border-color: #c1303b; }
-    button.danger  { border-color: var(--red); color: var(--red); }
-    button.danger:hover  { background: rgba(230,57,70,0.1); }
-
-    /* ── log / discovery pane ── */
-    #log-wrap {
-      width: 100%;
-      max-width: 540px;
-    }
-    #log {
-      background: #080808;
-      border: 1px solid #1e1e1e;
-      border-radius: 8px;
-      padding: 1rem;
-      height: 220px;
-      overflow-y: auto;
-      font-size: 0.72rem;
-      line-height: 1.6;
-      color: #6b6b6b;
-    }
-    #log .info  { color: #6b9fd4; }
-    #log .ok    { color: var(--green); }
-    #log .warn  { color: var(--yellow); }
-    #log .err   { color: var(--red); }
-    #log .data  { color: #c9c9c9; }
-    #log .uuid  { color: #a78bfa; }
-
-    /* ── UUID config section ── */
-    #uuid-section label {
-      display: block;
-      font-size: 0.65rem;
-      letter-spacing: 0.15em;
-      color: var(--muted);
-      margin-bottom: 0.35rem;
-      margin-top: 0.9rem;
-    }
-    #uuid-section input {
-      width: 100%;
-      background: #111;
-      border: 1px solid #333;
-      border-radius: 6px;
-      color: var(--bright);
-      font-family: var(--mono);
-      font-size: 0.78rem;
-      padding: 0.5rem 0.7rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    #uuid-section input:focus { border-color: #666; }
-
-    details summary {
-      cursor: pointer;
-      font-size: 0.7rem;
-      letter-spacing: 0.15em;
-      color: var(--muted);
-      text-transform: uppercase;
-      user-select: none;
-      padding: 0.5rem 0;
-    }
-    details summary:hover { color: var(--bright); }
-
-    hr { border: none; border-top: 1px solid #1e1e1e; }
-
-    /* ── beep indicator ── */
-    #beep-flash {
-      position: fixed;
-      inset: 0;
-      background: var(--red);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.05s;
-      z-index: 999;
-    }
-    #beep-flash.flash { opacity: 0.18; }
+    #state-label { text-align: center; font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
+    .btn-row { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
+    button { font-family: var(--mono); font-size: 0.82rem; border: 1px solid #444; border-radius: 8px; padding: 0.7rem 1.4rem; cursor: pointer; background: transparent; color: var(--bright); }
+    button.primary { background: var(--red); border-color: var(--red); }
+    #log { background: #080808; border: 1px solid #1e1e1e; border-radius: 8px; padding: 1rem; height: 200px; overflow-y: auto; font-size: 0.72rem; color: #6b6b6b; width: 100%; max-width: 540px; }
   </style>
 </head>
 <body>
-
-<div id="beep-flash"></div>
 
 <h1>GYM<span>BEEP</span></h1>
 <div id="status-pill">
@@ -230,480 +45,94 @@
   <span id="status-text">Not connected</span>
 </div>
 
-<!-- ── Main timer display card ── -->
 <div class="card">
   <h2>Timer State</h2>
   <div id="timer-display">--:--</div>
-  <div id="round-display"></div>
   <div id="state-label">Waiting for data…</div>
 </div>
 
-<!-- ── Controls ── -->
 <div class="btn-row">
   <button id="btn-connect" class="primary">Connect to Timer</button>
-  <button id="btn-discover" disabled>🔍 Discover Services</button>
-  <button id="btn-disconnect" class="danger" disabled>Disconnect</button>
+  <button id="btn-test-audio">Test Audio</button>
 </div>
 
-<!-- ── Config ── -->
-<div class="card" style="max-width:540px;width:100%">
-  <h2>Beep Settings</h2>
-  <label style="display:flex;align-items:center;gap:.6rem;font-size:.8rem;color:var(--muted);cursor:pointer">
-    <input type="checkbox" id="chk-round-start" checked style="accent-color:var(--red)">
-    Beep on round start
-  </label>
-  <br>
-  <label style="display:flex;align-items:center;gap:.6rem;font-size:.8rem;color:var(--muted);cursor:pointer">
-    <input type="checkbox" id="chk-thirty" checked style="accent-color:var(--red)">
-    Beep at 30 seconds remaining
-  </label>
-  <br>
-  <details id="uuid-section">
-    <summary>Advanced – UUID Configuration</summary>
-    <p style="font-size:0.7rem;color:var(--muted);margin-top:.6rem;line-height:1.6">
-      The Rogue timer uses proprietary Bluetooth UUIDs.
-      Use <b>Discover Services</b> (after connecting) to find them, or sniff with nRF Connect / Wireshark.
-      Paste the UUIDs you find below.
-    </p>
-    <label>Timer Service UUID</label>
-    <input id="inp-service" type="text" placeholder="e.g. 0000fff0-0000-1000-8000-00805f9b34fb" value="" />
-    <label>Notify Characteristic UUID (timer state / countdown)</label>
-    <input id="inp-char-notify" type="text" placeholder="e.g. 0000fff1-0000-1000-8000-00805f9b34fb" value="" />
-    <label>Optional: second notify characteristic</label>
-    <input id="inp-char-notify2" type="text" placeholder="Leave blank if unused" value="" />
-    <br>
-    <button id="btn-save-uuids" style="margin-top:.5rem;font-size:.75rem;padding:.4rem 1rem;">Save UUIDs</button>
-  </details>
-</div>
+<div id="log"></div>
 
-<!-- ── Log ── -->
-<div id="log-wrap">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;">
-    <span style="font-size:.65rem;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;">Debug Log</span>
-    <button id="btn-clear-log" style="font-size:.65rem;padding:.2rem .6rem;border-radius:4px;">Clear</button>
-  </div>
-  <div id="log"></div>
-</div>
-
-<!-- Audio -->
 <audio id="beep-audio" src="boxing-beep2.mp3" preload="auto"></audio>
 
 <script>
-// ─────────────────────────────────────────────────────────────────────────────
-// CONFIGURATION
-// Fill these in once you've discovered the real UUIDs via nRF Connect / sniff.
-// Use the UUID Config panel in the UI, or edit the defaults here.
-// ─────────────────────────────────────────────────────────────────────────────
-const CONFIG = {
-  // Known common vendor UUIDs to try for discovery scan
-  // These are guesses — real UUIDs must be found via nRF Connect or BT sniffing
-  serviceUUIDs: [
-    // Rogue seems to use a custom 128-bit UUID profile.
-    // Until you sniff, leave blank and use DISCOVER MODE below.
-  ],
-  // The characteristic that sends timer state notifications.
-  // MUST be discovered or sniffed. Fill in after discovery.
-  notifyChar1: localStorage.getItem('notifyChar1') || '',
-  notifyChar2: localStorage.getItem('notifyChar2') || '',
-  serviceUUID: localStorage.getItem('serviceUUID') || '',
+let bleDevice, bleServer, writeChar;
+let lastSeconds = -1;
+const audio = document.getElementById('beep-audio');
+const logEl = document.getElementById('log');
+
+function log(msg, color="#6b6b6b") {
+    const div = document.createElement('div');
+    div.style.color = color;
+    div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    logEl.appendChild(div);
+    logEl.scrollTop = logEl.scrollHeight;
+}
+
+document.getElementById('btn-test-audio').onclick = () => {
+    log("Testing audio...");
+    audio.play().catch(e => log("Audio Error: " + e.message, "red"));
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// STATE
-// ─────────────────────────────────────────────────────────────────────────────
-let bleDevice = null;
-let bleServer = null;
-let activeNotifyChars = [];
-let lastRoundState = null;   // 'work' | 'rest' | 'stopped'
-let lastSeconds = null;
-let thirtyBeeped = false;
-
-// ─────────────────────────────────────────────────────────────────────────────
-// DOM REFS
-// ─────────────────────────────────────────────────────────────────────────────
-const statusPill     = document.getElementById('status-pill');
-const statusText     = document.getElementById('status-text');
-const timerDisplay   = document.getElementById('timer-display');
-const roundDisplay   = document.getElementById('round-display');
-const stateLabel     = document.getElementById('state-label');
-const btnConnect     = document.getElementById('btn-connect');
-const btnDiscover    = document.getElementById('btn-discover');
-const btnDisconnect  = document.getElementById('btn-disconnect');
-const beepAudio      = document.getElementById('beep-audio');
-const beepFlash      = document.getElementById('beep-flash');
-const logEl          = document.getElementById('log');
-const inpService     = document.getElementById('inp-service');
-const inpChar1       = document.getElementById('inp-char-notify');
-const inpChar2       = document.getElementById('inp-char-notify2');
-const chkRoundStart  = document.getElementById('chk-round-start');
-const chkThirty      = document.getElementById('chk-thirty');
-
-// Populate inputs from saved values
-inpService.value = CONFIG.serviceUUID;
-inpChar1.value   = CONFIG.notifyChar1;
-inpChar2.value   = CONFIG.notifyChar2;
-
-// ─────────────────────────────────────────────────────────────────────────────
-// LOGGING
-// ─────────────────────────────────────────────────────────────────────────────
-function log(msg, cls = 'info') {
-  const ts  = new Date().toLocaleTimeString('en-CA', { hour12: false });
-  const div = document.createElement('div');
-  div.className = cls;
-  div.textContent = `[${ts}] ${msg}`;
-  logEl.appendChild(div);
-  logEl.scrollTop = logEl.scrollHeight;
-}
-document.getElementById('btn-clear-log').onclick = () => logEl.innerHTML = '';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// BEEP
-// ─────────────────────────────────────────────────────────────────────────────
-function beep(reason) {
-  log(`🔔 BEEP: ${reason}`, 'ok');
-  beepFlash.classList.add('flash');
-  setTimeout(() => beepFlash.classList.remove('flash'), 200);
-  beepAudio.currentTime = 0;
-  beepAudio.play().catch(e => log(`Audio error: ${e.message}`, 'err'));
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// STATUS UI
-// ─────────────────────────────────────────────────────────────────────────────
-function setStatus(text, cls = '') {
-  statusText.textContent = text;
-  statusPill.className = cls;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PARSE TIMER NOTIFICATION
-//
-// This is the part that REQUIRES reverse engineering.
-// The structure below is a TEMPLATE — you must fill it in once you've sniffed
-// the actual bytes the Rogue timer sends.
-//
-// HOW TO FIGURE THIS OUT:
-//   1. Connect with nRF Connect app → find characteristics with "Notify" property
-//   2. Enable notifications on each one
-//   3. Start the timer and watch the hex bytes change
-//   4. Match bytes to the timer state (round start, rest, countdown value)
-//
-// COMMON PATTERNS in boxing/interval timer BLE devices:
-//   byte[0] = mode/state  (0x01=work, 0x02=rest, 0x00=idle)
-//   byte[1] = minutes
-//   byte[2] = seconds
-//   byte[3] = round number
-//
-// The function below handles two common patterns. Update as needed.
-// ─────────────────────────────────────────────────────────────────────────────
-function parseTimerPacket(dataView, charUUID) {
-  const bytes = [];
-  for (let i = 0; i < dataView.byteLength; i++) bytes.push(dataView.getUint8(i));
-  const hex = bytes.map(b => b.toString(16).padStart(2,'0')).join(' ');
-  log(`← [${charUUID.substring(0,8)}…] ${hex}`, 'data');
-
-  // ── PATTERN A: common 4-byte interval timer format ──
-  // byte[0]: state  0x01=work  0x02=rest  0x00=idle/stopped
-  // byte[1]: minutes remaining
-  // byte[2]: seconds remaining
-  // byte[3]: round number (optional)
-  if (dataView.byteLength >= 3) {
-    const state   = bytes[0];
-    const minutes = bytes[1];
-    const seconds = bytes[2];
-    const round   = bytes.length > 3 ? bytes[3] : null;
-    const totalSec = minutes * 60 + seconds;
-
-    if (state === 0x01) handleWorkState(totalSec, round);
-    else if (state === 0x02) handleRestState(totalSec, round);
-    else if (state === 0x00) handleIdleState();
-    return;
-  }
-
-  // ── PATTERN B: ASCII/text-based packet ──
-  // Some timers send ASCII like "W 03:00 R1" or "R 00:30"
-  try {
-    const text = new TextDecoder().decode(dataView);
-    log(`  ↳ text: "${text.trim()}"`, 'data');
-    const match = text.match(/([WwRrIi])\s*(\d+):(\d+)(?:\s*R?(\d+))?/);
-    if (match) {
-      const stateChar = match[1].toUpperCase();
-      const min = parseInt(match[2]);
-      const sec = parseInt(match[3]);
-      const rnd = match[4] ? parseInt(match[4]) : null;
-      const totalSec = min * 60 + sec;
-      if (stateChar === 'W') handleWorkState(totalSec, rnd);
-      else if (stateChar === 'R') handleRestState(totalSec, rnd);
-      else handleIdleState();
-    }
-  } catch(e) { /* binary packet, not text */ }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TIMER STATE HANDLERS
-// ─────────────────────────────────────────────────────────────────────────────
-function handleWorkState(totalSecondsRemaining, round) {
-  const mm = String(Math.floor(totalSecondsRemaining / 60)).padStart(2,'0');
-  const ss = String(totalSecondsRemaining % 60).padStart(2,'0');
-  timerDisplay.textContent = `${mm}:${ss}`;
-  timerDisplay.className = totalSecondsRemaining <= 30 ? 'warn' : 'work';
-  stateLabel.textContent = 'WORK';
-  if (round !== null) roundDisplay.textContent = `Round ${round}`;
-  setStatus('Connected – WORK', 'active');
-
-  // Beep: round start (transition from non-work to work)
-  if (lastRoundState !== 'work' && chkRoundStart.checked) {
-    beep('Round start');
-    thirtyBeeped = false;
-  }
-
-  // Beep: 30 seconds warning
-  if (totalSecondsRemaining <= 30 && totalSecondsRemaining > 28 && !thirtyBeeped && chkThirty.checked) {
-    beep('30 seconds remaining');
-    thirtyBeeped = true;
-  }
-  if (totalSecondsRemaining > 30) thirtyBeeped = false;
-
-  lastRoundState = 'work';
-  lastSeconds = totalSecondsRemaining;
-}
-
-function handleRestState(totalSecondsRemaining, round) {
-  const mm = String(Math.floor(totalSecondsRemaining / 60)).padStart(2,'0');
-  const ss = String(totalSecondsRemaining % 60).padStart(2,'0');
-  timerDisplay.textContent = `${mm}:${ss}`;
-  timerDisplay.className = 'rest';
-  stateLabel.textContent = 'REST';
-  if (round !== null) roundDisplay.textContent = `Round ${round}`;
-  setStatus('Connected – REST', 'connected');
-  thirtyBeeped = false;
-  lastRoundState = 'rest';
-  lastSeconds = totalSecondsRemaining;
-}
-
-function handleIdleState() {
-  timerDisplay.textContent = '--:--';
-  timerDisplay.className = '';
-  stateLabel.textContent = 'Idle / Stopped';
-  roundDisplay.textContent = '';
-  setStatus('Connected', 'connected');
-  thirtyBeeped = false;
-  lastRoundState = 'stopped';
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// BLE CONNECT
-// ─────────────────────────────────────────────────────────────────────────────
-async function connect() {
-  if (!navigator.bluetooth) {
-    log('Web Bluetooth not supported in this browser. Use Chrome/Edge on desktop or Android.', 'err');
-    alert('Web Bluetooth is not supported.\nUse Chrome or Edge on desktop or Android.\niOS Safari does NOT support Web Bluetooth.');
-    return;
-  }
-
-  try {
-    setStatus('Scanning…', '');
-    log('Requesting BLE device…', 'info');
-
-    // Build request options
-    // We accept ANY device so the user can pick from the system dialog.
-    // This is the most permissive option — needed when you don't know the service UUID yet.
-    const requestOptions = {
-      acceptAllDevices: true,
-      // Once you know the service UUID, switch to:
-      // filters: [{ services: ['YOUR-SERVICE-UUID-HERE'] }]
-      // That lets the browser pre-filter to just your timer.
-      optionalServices: CONFIG.serviceUUID ? [CONFIG.serviceUUID] : [],
-    };
-
-    bleDevice = await navigator.bluetooth.requestDevice(requestOptions);
-    log(`Device selected: "${bleDevice.name}" (${bleDevice.id})`, 'ok');
-    bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
-
-    log('Connecting to GATT server…', 'info');
-    bleServer = await bleDevice.gatt.connect();
-    log('GATT connected ✓', 'ok');
-
-    setStatus(`Connected to ${bleDevice.name || 'Unknown'}`, 'connected');
-    btnDisconnect.disabled = false;
-    btnDiscover.disabled   = false;
-    btnConnect.disabled    = true;
-
-    // If we have configured UUIDs, subscribe immediately
-    if (CONFIG.serviceUUID && CONFIG.notifyChar1) {
-      await subscribeToNotifications();
-    } else {
-      log('No UUID configured yet. Use "Discover Services" to find them, then configure UUIDs above.', 'warn');
-      setStatus('Connected – configure UUIDs', 'warning');
-    }
-
-  } catch (err) {
-    log(`Connection failed: ${err.message}`, 'err');
-    setStatus('Not connected', '');
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SUBSCRIBE TO NOTIFICATIONS
-// ─────────────────────────────────────────────────────────────────────────────
-async function subscribeToNotifications() {
-  if (!bleServer || !CONFIG.serviceUUID || !CONFIG.notifyChar1) {
-    log('Cannot subscribe: missing service or characteristic UUID', 'err');
-    return;
-  }
-
-  try {
-    log(`Getting service: ${CONFIG.serviceUUID}`, 'info');
-    const service = await bleServer.getPrimaryService(CONFIG.serviceUUID);
-    log('Service found ✓', 'ok');
-
-    for (const uuid of [CONFIG.notifyChar1, CONFIG.notifyChar2].filter(Boolean)) {
-      try {
-        log(`Getting characteristic: ${uuid}`, 'info');
-        const char = await service.getCharacteristic(uuid);
-        await char.startNotifications();
-        char.addEventListener('characteristicvaluechanged', (e) => {
-          parseTimerPacket(e.target.value, uuid);
+document.getElementById('btn-connect').onclick = async () => {
+    try {
+        log("Searching for Rogue Echo 2.0...");
+        bleDevice = await navigator.bluetooth.requestDevice({
+            filters: [{ namePrefix: 'Rogue' }, { namePrefix: 'Echo' }],
+            optionalServices: ['0000fff0-0000-1000-8000-00805f9b34fb']
         });
-        activeNotifyChars.push(char);
-        log(`Subscribed to notifications on ${uuid} ✓`, 'ok');
-      } catch (e) {
-        log(`Could not subscribe to ${uuid}: ${e.message}`, 'err');
-      }
-    }
 
-    if (activeNotifyChars.length > 0) {
-      setStatus(`Connected – listening`, 'connected');
-      log('Ready. Waiting for timer data…', 'ok');
-    }
-  } catch (err) {
-    log(`Subscription failed: ${err.message}`, 'err');
-    log('Try running "Discover Services" to find the right UUID.', 'warn');
-  }
-}
+        bleServer = await bleDevice.gatt.connect();
+        const service = await bleServer.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
+        
+        const notifyChar = await service.getCharacteristic('0000fff1-0000-1000-8000-00805f9b34fb');
+        writeChar = await service.getCharacteristic('0000fff2-0000-1000-8000-00805f9b34fb');
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DISCOVER SERVICES (the UUID hunting mode)
-// Connects and dumps ALL services + characteristics so you can identify the
-// right ones to use. Run this once, copy the UUIDs, paste them above.
-// ─────────────────────────────────────────────────────────────────────────────
-async function discoverServices() {
-  if (!bleServer) { log('Not connected', 'err'); return; }
+        await notifyChar.startNotifications();
+        document.getElementById('status-pill').className = 'connected';
+        document.getElementById('status-text').innerText = 'Connected';
 
-  log('─── SERVICE DISCOVERY START ───', 'warn');
-  log('Start your timer running BEFORE reading this output.', 'warn');
+        notifyChar.addEventListener('characteristicvaluechanged', (e) => {
+            const bytes = new Uint8Array(e.target.value.buffer);
+            // Log raw hex for debugging
+            const hex = Array.from(bytes).map(b => b.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+            log("DATA: " + hex, "#00ff41");
 
-  try {
-    const services = await bleServer.getPrimaryServices();
-    log(`Found ${services.length} service(s):`, 'ok');
-
-    for (const svc of services) {
-      log(`\n  SERVICE: ${svc.uuid}`, 'uuid');
-      try {
-        const chars = await svc.getCharacteristics();
-        for (const ch of chars) {
-          const props = Object.entries(ch.properties)
-            .filter(([,v]) => v).map(([k]) => k).join(', ');
-          log(`    CHAR: ${ch.uuid}  [${props}]`, 'uuid');
-
-          // If it supports notify, subscribe temporarily and log raw bytes
-          if (ch.properties.notify || ch.properties.indicate) {
-            try {
-              await ch.startNotifications();
-              ch.addEventListener('characteristicvaluechanged', (e) => {
-                const dv = e.target.value;
-                const bytes = [];
-                for (let i = 0; i < dv.byteLength; i++) bytes.push(dv.getUint8(i));
-                log(`      ↳ NOTIFY ${ch.uuid}: [${bytes.map(b=>b.toString(16).padStart(2,'0')).join(' ')}]`, 'data');
-              });
-              log(`      → Subscribed to notifications`, 'ok');
-            } catch(e) {
-              log(`      → Could not subscribe: ${e.message}`, 'err');
+            if (bytes.length >= 4) {
+                const m = bytes[2];
+                const s = bytes[3];
+                document.getElementById('timer-display').innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+                
+                // Beep logic (30s mark)
+                if (s === 30 && lastSeconds !== 30) {
+                    audio.play().catch(()=>{});
+                    log("BEEP TRIGGERED", "yellow");
+                }
+                lastSeconds = s;
             }
-          }
+        });
 
-          // Try to read if readable
-          if (ch.properties.read) {
-            try {
-              const val = await ch.readValue();
-              const bytes = [];
-              for (let i = 0; i < val.byteLength; i++) bytes.push(val.getUint8(i));
-              log(`      ↳ READ: [${bytes.map(b=>b.toString(16).padStart(2,'0')).join(' ')}]`, 'data');
-            } catch(e) { /* not readable right now */ }
-          }
-        }
-      } catch(e) {
-        log(`    Could not get characteristics: ${e.message}`, 'err');
-      }
+        // START THE HEARTBEAT (The secret for Echo 2.0)
+        setInterval(async () => {
+            if (writeChar) {
+                try {
+                    // This forces the timer to broadcast its status
+                    await writeChar.writeValueWithoutResponse(new Uint8Array([0x03, 0x01, 0x01, 0x01]));
+                } catch(e) {}
+            }
+        }, 1000);
+
+        log("Sync active. Run your rounds!");
+
+    } catch (e) {
+        log("Connection Error: " + e.message, "red");
     }
-    log('─── SERVICE DISCOVERY DONE ───', 'warn');
-    log('Look above for CHAR lines with [notify] property — those are your targets.', 'warn');
-    log('Watch the "NOTIFY" lines while the timer runs to identify which carries the countdown.', 'warn');
-  } catch (err) {
-    log(`Discovery failed: ${err.message}`, 'err');
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// DISCONNECT
-// ─────────────────────────────────────────────────────────────────────────────
-function disconnect() {
-  if (bleDevice && bleDevice.gatt.connected) {
-    bleDevice.gatt.disconnect();
-  }
-}
-
-function onDisconnected() {
-  log('Device disconnected', 'warn');
-  setStatus('Disconnected', '');
-  bleServer = null;
-  activeNotifyChars = [];
-  btnDisconnect.disabled = true;
-  btnDiscover.disabled   = true;
-  btnConnect.disabled    = false;
-  handleIdleState();
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SAVE UUIDs
-// ─────────────────────────────────────────────────────────────────────────────
-document.getElementById('btn-save-uuids').onclick = async () => {
-  CONFIG.serviceUUID  = inpService.value.trim().toLowerCase();
-  CONFIG.notifyChar1  = inpChar1.value.trim().toLowerCase();
-  CONFIG.notifyChar2  = inpChar2.value.trim().toLowerCase();
-  localStorage.setItem('serviceUUID',  CONFIG.serviceUUID);
-  localStorage.setItem('notifyChar1',  CONFIG.notifyChar1);
-  localStorage.setItem('notifyChar2',  CONFIG.notifyChar2);
-  log(`UUIDs saved. Service: ${CONFIG.serviceUUID || '(none)'}`, 'ok');
-  log(`Char1: ${CONFIG.notifyChar1 || '(none)'}`, 'ok');
-  if (CONFIG.notifyChar2) log(`Char2: ${CONFIG.notifyChar2}`, 'ok');
-
-  // If already connected, try subscribing now
-  if (bleServer && bleServer.connected && activeNotifyChars.length === 0) {
-    await subscribeToNotifications();
-  }
 };
-
-// ─────────────────────────────────────────────────────────────────────────────
-// BUTTON WIRING
-// ─────────────────────────────────────────────────────────────────────────────
-btnConnect.onclick    = connect;
-btnDiscover.onclick   = discoverServices;
-btnDisconnect.onclick = disconnect;
-
-// ─────────────────────────────────────────────────────────────────────────────
-// INIT
-// ─────────────────────────────────────────────────────────────────────────────
-if (!navigator.bluetooth) {
-  log('⚠️  Web Bluetooth not available in this browser.', 'err');
-  log('   → Use Google Chrome or Microsoft Edge on desktop or Android.', 'err');
-  log('   → iOS Safari does NOT support Web Bluetooth.', 'err');
-  btnConnect.disabled = true;
-} else {
-  log('Web Bluetooth available ✓', 'ok');
-  log('Click "Connect to Timer" to start. The timer must be on and in BLE pairing mode.', 'info');
-  log('TIP: Disconnect from the Rogue App first — only ONE device can be connected at a time.', 'warn');
-}
 </script>
 </body>
 </html>
