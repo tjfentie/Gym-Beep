@@ -1,88 +1,98 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Rogue Scanner V2</title>
+    <title>Gym Beep - Rogue</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { background: #000; color: #fff; font-family: monospace; padding: 20px; text-align: center; }
-        .box { border: 2px solid #444; padding: 20px; border-radius: 15px; max-width: 400px; margin: auto; background: #111; }
-        button { background: #d32f2f; color: #fff; border: none; padding: 15px; width: 100%; border-radius: 10px; font-weight: bold; margin-bottom: 10px; cursor: pointer; }
-        #clock { font-size: 4em; color: #32d74b; margin: 10px 0; }
-        #log { background: #000; font-size: 11px; height: 300px; overflow-y: scroll; text-align: left; padding: 10px; color: #0f0; border: 1px solid #333; display: flex; flex-direction: column-reverse; }
-        .hex-line { color: #00ff00; border-bottom: 1px solid #222; padding: 4px 0; font-size: 12px; }
-        .sys-msg { color: #ffd60a; margin: 5px 0; }
+        .box { border: 2px solid #444; padding: 20px; border-radius: 15px; max-width: 400px; margin: auto; background: #111; box-shadow: 0 0 20px rgba(211, 47, 47, 0.2); }
+        button { background: #d32f2f; color: #fff; border: none; padding: 18px; width: 100%; border-radius: 10px; font-weight: bold; margin-bottom: 12px; cursor: pointer; font-size: 1.1em; transition: 0.2s; }
+        button:active { background: #ff5252; transform: scale(0.98); }
+        #clock { font-size: 5em; color: #32d74b; margin: 15px 0; line-height: 1; text-shadow: 0 0 10px rgba(50, 215, 75, 0.3); }
+        #log { background: #000; font-size: 11px; height: 280px; overflow-y: scroll; text-align: left; padding: 10px; color: #0f0; border: 1px solid #333; display: flex; flex-direction: column-reverse; line-height: 1.5; }
+        .hex-line { color: #888; border-bottom: 1px solid #222; padding: 4px 0; font-size: 10px; }
+        .sys-msg { color: #ffd60a; margin: 5px 0; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="box">
-        <h2 style="color:#d32f2f">ROGUE SCANNER</h2>
-        <button onclick="unlockAudio()">1. ENABLE SOUND</button>
-        <button onclick="connect()">2. PAIR TIMER</button>
+        <h2 style="color:#d32f2f; margin:0 0 15px 0;">GYM BEEP V6</h2>
+        
+        <button id="testBtn">1. TEST BOXING BEEP</button>
+        <button id="connBtn">2. CONNECT TIMER</button>
         
         <div id="clock">--:--</div>
-        <div id="log">Logs waiting...</div>
+        <div id="log">Ready. Looking for boxing-beep2.mp3</div>
     </div>
 
     <script>
-        // Using a reliable sample sound hosted on GitHub to avoid "No supported sources"
-        const audio = new Audio('https://raw.githubusercontent.com/rafaelreis-hotmart/Audio-Samples/master/ding.mp3');
+        // Filename corrected to boxing-beep2.mp3
+        const audio = new Audio('boxing-beep2.mp3'); 
         const logEl = document.getElementById('log');
+        let pulseCount = 0;
 
         function logger(m, isData = false) {
             const div = document.createElement('div');
             div.className = isData ? 'hex-line' : 'sys-msg';
             div.textContent = `> ${m}`;
             logEl.appendChild(div);
+            if (logEl.childNodes.length > 50) logEl.removeChild(logEl.firstChild);
         }
 
-        function unlockAudio() {
-            logger("Attempting to wake audio...");
+        document.getElementById('testBtn').onclick = () => {
+            logger("Loading boxing-beep2.mp3...");
             audio.play().then(() => {
-                logger("SOUND WORKING! You should have heard a ding.");
-            }).catch(e => logger("AUDIO BLOCKED: " + e.message));
-        }
+                logger("SOUND PLAYING!");
+            }).catch(e => {
+                logger("SOUND ERROR: " + e.message);
+                logger("Wait 1 min for GitHub to update & refresh.");
+            });
+        };
 
-        async function connect() {
+        document.getElementById('connBtn').onclick = async () => {
             try {
-                logger("Opening device picker...");
+                logger("Requesting Rogue Device...");
                 const device = await navigator.bluetooth.requestDevice({
                     acceptAllDevices: true,
                     optionalServices: ['0000fff0-0000-1000-8000-00805f9b34fb']
                 });
 
-                logger("Connecting...");
+                logger("Connected to " + device.name);
                 const server = await device.gatt.connect();
                 const service = await server.getPrimaryService('0000fff0-0000-1000-8000-00805f9b34fb');
                 const char = await service.getCharacteristic('0000fff1-0000-1000-8000-00805f9b34fb');
 
                 await char.startNotifications();
-                logger("DATA CONNECTED. Start the timer now.");
+                logger("LISTENING... Start the timer!");
 
                 char.addEventListener('characteristicvaluechanged', (e) => {
                     const buf = e.target.value;
+                    pulseCount++;
+                    
                     let hex = "";
                     let bytes = [];
-                    
                     for (let i = 0; i < buf.byteLength; i++) {
                         let b = buf.getUint8(i);
                         bytes.push(b);
                         hex += b.toString(16).padStart(2, '0').toUpperCase() + " ";
                     }
 
-                    // Log the RAW HEX so we can see what slot 30s is in
-                    logger(hex, true);
+                    // Display raw data every few pulses to save screen space
+                    if (pulseCount % 2 === 0) logger(hex, true);
 
-                    // Try to update clock if data looks like [??, Minutes, Seconds]
+                    // Rogue Protocol Check
                     if (bytes.length >= 3) {
                         let m = bytes[1];
                         let s = bytes[2];
-                        if (s < 60) {
+                        
+                        if (s < 60 && m < 100) {
                             document.getElementById('clock').innerText = 
                                 `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
                             
+                            // BEEP AT THE 30s MARK
                             if (s === 30) {
-                                audio.play();
-                                logger("!!! 30S BEEP !!!");
+                                audio.play().catch(() => {});
+                                logger("!!! 30S BEEP TRIGGERED !!!");
                             }
                         }
                     }
@@ -90,7 +100,7 @@
             } catch (e) {
                 logger("FAIL: " + e.message);
             }
-        }
+        };
     </script>
 </body>
 </html>
